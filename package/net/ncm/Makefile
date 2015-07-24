@@ -6,12 +6,14 @@
 # See /LICENSE for more information.
 #
 
+# Original package by Oskari Rauta <oskari.rauta at gmail.com>
+# To see this package in menuconfig, first turn on Kernel modules/USB Support/kmod-usb-net
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ncm
-PKG_VERSION:=1.0.1
+PKG_VERSION:=1.0.2a
 PKG_RELEASE:=1
-PKG_MAINTAINER:=Oskari Rauta <oskari.rauta at gmail.com>
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)-$(PKG_RELEASE)
 
 include $(INCLUDE_DIR)/package.mk
@@ -19,7 +21,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/ncm/Default
   VERSION:=$(PKG_VERSION)-$(PKG_RELEASE)
   URL:=http://openwrt.org/
-  MAINTAINER:=Oskari Rauta <oskari.rauta at gmail.com>
+  MAINTAINER:=Ilya Basin <basinilya at gmail.com>
 endef
 
 define Package/ncm
@@ -27,6 +29,7 @@ $(call Package/ncm/Default)
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Protocol support for NCM
+  PKGARCH:=all
   DEPENDS:=+comgt +kmod-usb-net-cdc-ncm +kmod-usb-serial
 endef
 
@@ -39,6 +42,7 @@ $(call Package/ncm/Default)
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Huawei E3276 support for NCM protocol
+  PKGARCH:=all
   DEPENDS:=+ncm +comgt +kmod-usb-serial
 endef
 
