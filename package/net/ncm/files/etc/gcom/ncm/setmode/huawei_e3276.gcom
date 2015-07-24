@@ -1,0 +1,56 @@
+# set wwan mode from environment
+opengt
+ set com 115200n81
+ set senddelay 0.02
+ waitquiet 1 0.2
+ flash 0.1
+
+:start
+ if $env("MODE")="2g" goto 2g
+ if $env("MODE")="3g" goto 3g
+ if $env("MODE")="lte" goto lte
+ if $env("MODE")="prefer3g" goto prefer3g
+ if $env("MODE")="preferlte" goto preferlte
+ goto auto
+
+:auto
+ send "AT^^SYSCFGEX=\"00\",3FFFFFFF,2,4,7FFFFFFFFFFFFFFF,,^m"
+ goto result
+
+:2g
+ send "AT^^SYSCFGEX=\"01\",3FFFFFFF,2,4,7FFFFFFFFFFFFFFF,,^m"
+ goto result
+
+:3g
+ send "AT^^SYSCFGEX=\"02\",3FFFFFFF,2,4,7FFFFFFFFFFFFFFF,,^m"
+ goto result
+
+:lte
+ send "AT^^SYSCFGEX=\"03\",3FFFFFFF,2,4,7FFFFFFFFFFFFFFF,,^m"
+ goto result
+
+:prefer3g
+ send "AT^^SYSCFGEX=\"0201\",3FFFFFFF,2,4,7FFFFFFFFFFFFFFF,,^m"
+ goto result
+
+:preferlte
+ send "AT^^SYSCFGEX=\"030201\",3FFFFFFF,2,4,7FFFFFFFFFFFFFFF,,^m"
+ goto result
+
+:result
+ waitfor 8 "OK","ERR","ERROR"
+ if % = 0 goto continue
+ if % = 1 goto modeerror
+ if % = 2 goto modeerror
+ print "Timeout setting WWAN mode!\n"
+ exit 1
+
+:modeerror
+ print "Error setting WWAN mode!\n"
+ exit 1
+
+:continue
+ print "WWAN mode set to '"
+ print $env("MODE")
+ print "'\r\n"
+ exit 0

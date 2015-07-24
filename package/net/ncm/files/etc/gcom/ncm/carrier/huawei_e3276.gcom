@@ -1,0 +1,56 @@
+opengt
+set com 115200n81
+set comecho off
+set senddelay 0.02
+waitquiet 0.2 0.2
+flash 0.1
+
+:getprovider
+ send "AT+COPS?^m"
+ let $r="+COPS:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{print \"provider \\x27\" $4 \"\\x27\"}'"
+
+:getmode
+ send "AT^^SYSCFGEX?^m"
+ let $r="^^SYSCFGEX:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{ \\
+	if ( $2 == \"01\" ) print \"mode \\x27\" \"2G\\x27\"; \\
+	else if ( $2 == \"02\" ) print \"mode \\x27\" \"3G\\x27\"; \\
+	else if ( $2 == \"03\" ) print \"mode \\x27\" \"LTE\\x27\"; \\
+	else if ( $2 == \"0201\" ) print \"mode \\x27\" \"3G Preferred\\x27\"; \\
+	else if ( $2 == \"030201\" ) print \"mode \\x27\" \"LTE Preferred\\x27\"; \\
+	else if (( $2 == \"00\" ) or ( $2 == \"0\" )) print \"mode \\x27\" \"Automatic/Any\\x27\"; \\
+	else print \"mode \\x27\" \"Unknown\\x27\";}'"
+
+:getrate
+ send "AT+CGEQNEG=1^m"
+ let $r="+CGEQNEG:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{ print \"downlink \\x27\" int($5) \"kbps\\x27\"; print \"uplink \\x27\" int($4) \"kbps\\x27\"; }'"
+ goto done
+
+:readresult
+ let i=5
+ let $x=""
+:loop
+ get 1 "^m" $s
+ let l=len($r)
+ if len($s) < l goto loop1
+ if $mid($s,1,l) <> $r goto loop1
+ let $x=$mid($s,1,len($s)-1)
+ return
+:loop1
+ if len($s) < 2 goto loop2
+ if $mid($s,1,2) = "ER" return
+ if $mid($s,1,2) = "CO" return
+:loop2
+ if i = 0 return
+ let i=i-1
+ sleep 0.25
+ goto loop
+
+:done
+ exit 0
+^@^@

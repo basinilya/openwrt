@@ -1,0 +1,38 @@
+opengt
+ set com 115200n81
+ set comecho on
+ set senddelay 0.02
+ waitquiet 0.2 0.2
+ flash 0.1
+
+:start
+ let i=0
+
+:waitfordevice
+ waitquiet 2 0.5
+ inc i
+ send "AT^m"
+ waitfor 4 "OK","ERR","ERROR"
+ if % = 0 goto detect
+ if i < 5 goto waitfordevice
+ print "Error: Dongle not responding."
+ exit 1
+
+:detect
+ send "ATI^m"
+ waitfor 1 "ATI^m"
+ get 1 "OK" $s
+
+:output
+ system "echo \""+$s+"\" | grep \"Manufacturer:\" | awk '{print \"vendor \\x27\" $2 \"\\x27\"; }'"
+ system "echo \""+$s+"\" | grep \"Model:\" | awk '{print \"model \\x27\" $2 \"\\x27\"; }'"
+ system "echo \""+$s+"\" | grep \"Revision:\" | awk '{print \"firmware \\x27\" $2 \"\\x27\"; }'"
+ system "echo \""+$s+"\" | grep \"IMEI:\" | awk '{print \"imei \\x27\" $2 \"\\x27\"; }'"
+ system "echo \""+$s+"\" | egrep -i '^^Manufacturer|^^Model' | cut -d ' ' -f 2 | tr -d '\r' | tr '\n' '_' | sed \"s/\\(.*\\)_$/\\'\\1\\'\\n/\" | awk '{ gsub(\"\\x27\", \"\"); \\
+	if ( $1 == \"huawei_E3276\" ) print \"driver \\x27huawei_e3276\\x27\"; \\
+	else print \"driver \\x27-\\x27\";}'"
+
+ goto continue
+
+:continue
+ exit 0

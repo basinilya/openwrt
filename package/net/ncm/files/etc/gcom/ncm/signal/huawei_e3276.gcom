@@ -1,0 +1,61 @@
+opengt
+set com 115200n81
+set comecho off
+set senddelay 0.02
+waitquiet 0.2 0.2
+flash 0.1
+
+:getcell
+ send "AT+CREG=2^m"
+ let $r="OK"
+ gosub readresult
+ if $r <> $x goto getnetwork
+
+ send "AT+CREG?^m"
+ let $r="+CREG:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{print \"cellid \\x27\" \"0x\" $5 \" (\" (\"0x\"$5)+0 \")\\x27\"; print \"lac \\x27\" \"0x\" $4 \" (\" (\"0x\"$4)+0 \")\\x27\";}'"
+
+:getnetwork
+ send "AT^^SYSINFOEX^m"
+ let $r="^^SYSINFOEX:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{print \"network \\x27\" $8 \" / \" $10 \"\\x27\";}'"
+
+:getsignalstrength
+ send "AT+CSQ^m"
+ let $r="+CSQ:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{ print \"signal \\x27\" int(($2 * 100 / 31)+0.5) \"%\\x27\"; print \"rssi \\x27\" int(2 * $2 - 113) \"dBm\\x27\"; print \"csq \\x27\" int($2) \"\\x27\"; }'"
+
+:getnoicelevels
+ send "AT^^CSNR?^m"
+ let $r="^^CSNR:"
+ gosub readresult
+ system "echo \""+$x+"\" | awk -F\"[:,]\" '{ print \"rcsp \\x27\" int($2) \"dBm\\x27\"; print \"ecio \\x27\" int($3) \"dB\\x27\";}'"
+
+ goto done
+
+:readresult
+ let i=5
+ let $x=""
+:loop
+ get 1 "^m" $s
+ let l=len($r)
+ if len($s) < l goto loop1
+ if $mid($s,1,l) <> $r goto loop1
+ let $x=$mid($s,1,len($s)-1)
+ return
+:loop1
+ if len($s) < 2 goto loop2
+ if $mid($s,1,2) = "ER" return
+ if $mid($s,1,2) = "CO" return
+:loop2
+ if i = 0 return
+ let i=i-1
+ sleep 0.25
+ goto loop
+
+:done
+ exit 0
+^@^@

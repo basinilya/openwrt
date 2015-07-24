@@ -1,0 +1,31 @@
+opengt
+set com 115200n81
+set comecho off
+set senddelay 0.02
+waitquiet 0.2 0.2
+flash 0.1
+
+:start
+ send "AT^m"
+ waitfor 4 "OK","ERR","ERROR"
+ if % = 1 goto initerror
+ if % = 2 goto initerror
+
+ send "ATZ^m"
+ waitfor 4 "OK","ERR","ERROR"
+ if % = 1 goto initerror
+ if % = 2 goto initerror
+
+ send "ATQ V1 E1 S0=0^m"
+ waitfor 4 "OK","ERR","ERROR"
+ if % = 0 goto continue
+ if % = 1 goto initerror
+ if % = 2 goto initerror
+
+:modeerror
+ print "Error while initializing dongle.\n"
+ exit 1
+
+:continue
+ print "Dongle initialization complete.\n"
+ exit 0
