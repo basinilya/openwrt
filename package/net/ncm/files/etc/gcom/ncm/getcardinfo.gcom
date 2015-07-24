@@ -20,7 +20,6 @@ opengt
 
 :detect
  send "ATI^m"
- waitfor 1 "ATI^m"
  get 1 "OK" $s
 
 :output
