@@ -15,29 +15,18 @@ proto_ncm_init_config() {
 	proto_config_add_string "delay"
 	proto_config_add_string "username"
 	proto_config_add_string "password"
-	proto_config_add_string "ipaddr"
-	proto_config_add_string "netmask"
-	proto_config_add_string "hostname"
-	proto_config_add_string "clientid"
-	proto_config_add_string "vendorid"
-	proto_config_add_boolean "broadcast"
-	proto_config_add_string "reqopts"
-	proto_config_add_string "iface6rd"
-	proto_config_add_string "sendopts"
 }
 
 proto_ncm_setup() {
 
-	local config="$1"
+	local interface="$1"
 	local iface="$JSON_ARRAY1_1"
 
 	local device mode apn pincode authtype delay username password
-	local ipaddr hostname clientid vendorid broadcast reqopts iface6rd sendopts
 	local cardinfo brand model driver
 	local dialupscript modescript initscript
 
 	json_get_vars device mode apn pincode delay authtype username password
-	json_get_vars ipaddr hostname clientid vendorid broadcast reqopts iface6rd sendopts
 
 	[ -e "$device" ] || {
 		proto_set_available "$interface" 0
@@ -95,35 +84,16 @@ proto_ncm_setup() {
 
 	[ ! -z "${delay##*[!0-9]*}" ] && [ "$delay" != "0" ] && /bin/sleep $delay
 
-	local opt dhcpopts
-	for opt in $reqopts; do
-		append dhcpopts "-O $opt"
-	done
-
-	for opt in $sendopts; do
-		append dhcpopts "-x $opt"
-	done
-
-	[ "$broadcast" = 1 ] && broadcast="-B" || broadcast=
-	[ -n "$clientid" ] && clientid="-x 0x3d:${clientid//:/}" || clientid="-C"
-	[ -n "$iface6rd" ] && proto_export "IFACE6RD=$iface6rd"
-
+	logger -p daemon.info -t "ncm[$$]" "Connected, notifying netifd"
 	proto_init_update "$iface" 1
-	proto_send_update "$config"
+	proto_send_update "$interface"
 
-	proto_export "INTERFACE=$config"
-	proto_run_command "$config" udhcpc \
-		-p /var/run/udhcpc-$iface.pid \
-		-s /lib/netifd/ncm_dhcp.script \
-		-f -t 0 -i "$iface" \
-		${ipaddr:+-r $ipaddr} \
-		${hostname:+-H $hostname} \
-		${vendorid:+-V $vendorid} \
-		$clientid $broadcast $dhcpopts
+	return 0
 }
 
 proto_ncm_teardown() {
 	local interface="$1"
+	local iface="$2"
 	local device apn cardinfo driver dialupscript
 
 	json_get_vars device apn
@@ -138,7 +108,8 @@ proto_ncm_teardown() {
 				USE_DISCONNECT="1" USE_APN="$apn" gcom -d "$device" -s "$dialupscript"
 			}
 
-	proto_kill_command "$interface"
+	proto_init_update "$iface" 0
+	proto_send_update "$interface"
 }
 
 add_protocol ncm
