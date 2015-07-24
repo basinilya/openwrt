@@ -21,7 +21,7 @@ flash 0.1
 	else if ( $2 == \"03\" ) print \"mode \\x27\" \"LTE\\x27\"; \\
 	else if ( $2 == \"0201\" ) print \"mode \\x27\" \"3G Preferred\\x27\"; \\
 	else if ( $2 == \"030201\" ) print \"mode \\x27\" \"LTE Preferred\\x27\"; \\
-	else if (( $2 == \"00\" ) or ( $2 == \"0\" )) print \"mode \\x27\" \"Automatic/Any\\x27\"; \\
+	else if (( $2 == \"00\" ) || ( $2 == \"0\" )) print \"mode \\x27\" \"Automatic/Any\\x27\"; \\
 	else print \"mode \\x27\" \"Unknown\\x27\";}'"
 
 :getrate
