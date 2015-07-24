@@ -5,6 +5,8 @@
 init_proto "$@"
 
 proto_ncm_init_config() {
+	no_device=1
+	available=1
 	proto_config_add_string "device"
 	proto_config_add_string "mode"
 	proto_config_add_string "apn"
@@ -25,8 +27,9 @@ proto_ncm_init_config() {
 }
 
 proto_ncm_setup() {
+
 	local config="$1"
-	local iface="$2"
+	local iface="$JSON_ARRAY1_1"
 
 	local device mode apn pincode authtype delay username password
 	local ipaddr hostname clientid vendorid broadcast reqopts iface6rd sendopts
@@ -44,7 +47,7 @@ proto_ncm_setup() {
 	cardinfo=$(gcom -d "$device" -s /etc/gcom/ncm/getcardinfo.gcom)
 	brand=$(echo "$cardinfo" | grep "vendor '" | awk '{ gsub("\x27", ""); print $2; }')
 	model=$(echo "$cardinfo" | grep "model '" | awk '{ gsub("\x27", ""); print $2; }')
-	driver=$(echo "$cardinfo" | grep "driver '" | awk '{ gsub("\x27", ""); print $2; }')
+	driver=$(echo "$cardinfo" | grep "driver '" | awk '{ gsub("\x27", ""); print $2; }')	
 
 	[ "$driver" = "-" ] && {
 		logger Detected $brand $model. Device is not supported.
@@ -105,10 +108,13 @@ proto_ncm_setup() {
 	[ -n "$clientid" ] && clientid="-x 0x3d:${clientid//:/}" || clientid="-C"
 	[ -n "$iface6rd" ] && proto_export "IFACE6RD=$iface6rd"
 
+	proto_init_update "$iface" 1
+	proto_send_update "$config"
+
 	proto_export "INTERFACE=$config"
 	proto_run_command "$config" udhcpc \
 		-p /var/run/udhcpc-$iface.pid \
-		-s /lib/netifd/dhcp.script \
+		-s /lib/netifd/ncm_dhcp.script \
 		-f -t 0 -i "$iface" \
 		${ipaddr:+-r $ipaddr} \
 		${hostname:+-H $hostname} \
@@ -126,10 +132,11 @@ proto_ncm_teardown() {
 	driver=$(echo "$cardinfo" | grep "driver '" | awk '{ gsub("\x27", ""); print $2; }')
 	dialupscript="/etc/gcom/ncm/connect/$driver.gcom"
 
-	[ "$driver" == "-" ] ||
-		[ -e "$device" ] &&
-			[ -e "$dialupscript" ] &&
+	[ "$driver" == "-" ] || 
+		[ -e "$device" ] && 
+			[ -e "$dialupscript" ] && {
 				USE_DISCONNECT="1" USE_APN="$apn" gcom -d "$device" -s "$dialupscript"
+			}
 
 	proto_kill_command "$interface"
 }
